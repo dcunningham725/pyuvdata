@@ -1671,11 +1671,11 @@ class UVData(UVBase):
 
         Output:
             ant_pairs_nums: List of tuples containing the parsed pairs of antennae numbers.
+                If 'all' is passed as ant_str, returned as None.
             polarizations: List of desired polarizations.  If no polarizations found in ant_str
                 then returned as None.
         """
 
-        # nants = self.Nants_data
         ant_re = r'(\(((-?\d+[lrxy]?,?)+)\)|-?\d+[lrxy]?)'
         bl_re = '(^(%s_%s|%s),?)' % (ant_re, ant_re, ant_re)
         str_pos = 0
@@ -1766,7 +1766,7 @@ class UVData(UVBase):
                                             polarizations.append(uvutils.polstr2num(pol))
                                             print polarizations
 
-        # If no antenna pairs found from ant_str, return None for ant_pairs_nums
+        # If ant_str == 'all', i.e. keep all antenna pairs
         if len(ant_pairs_nums) == 0:
             ant_pairs_nums = None
 
