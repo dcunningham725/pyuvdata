@@ -27,7 +27,7 @@ class Miriad(UVData):
         return pol_ind
 
     def read_miriad(self, filepath, correct_lat_lon=True, run_check=True,
-                    run_check_acceptability=True, phase_type=None):
+                    check_extra=True, run_check_acceptability=True, phase_type=None):
         """
         Read in data from a miriad file.
 
@@ -36,9 +36,11 @@ class Miriad(UVData):
             correct_lat_lon: flag -- that only matters if altitude is missing --
                 to update the latitude and longitude from the known_telescopes list
             run_check: Option to check for the existence and proper shapes of
-                required parameters after reading in the file. Default is True.
+                parameters after reading in the file. Default is True.
+            check_extra: Option to check optional parameters as well as required
+                ones. Default is True.
             run_check_acceptability: Option to check acceptable range of the values of
-                required parameters after reading in the file. Default is True.
+                parameters after reading in the file. Default is True.
         """
         if not os.path.exists(filepath):
             raise(IOError, filepath + ' not found')
@@ -49,10 +51,7 @@ class Miriad(UVData):
                               'integration_time': 'inttime',
                               'channel_width': 'sdf',  # in Ghz!
                               'object_name': 'source',
-                              # NB: telescope_name and instrument are treated
-                              # as the same
-                              'telescope_name': 'telescop',
-                              'instrument': 'telescop'
+                              'telescope_name': 'telescop'
                               }
         for item in miriad_header_data:
             if isinstance(uv[miriad_header_data[item]], str):
@@ -122,6 +121,27 @@ class Miriad(UVData):
             self.history += self.pyuvdata_version_str
         self.channel_width *= 1e9  # change from GHz to Hz
 
+        # check for pyuvdata variables that are not recognized miriad variables
+        if 'visunits' in uv.vartable.keys():
+            self.vis_units = uv['visunits'].replace('\x00', '')
+        else:
+            self.vis_units = 'UNCALIB'  # assume no calibration
+        if 'instrume' in uv.vartable.keys():
+            self.instrument = uv['instrume'].replace('\x00', '')
+        else:
+            self.instrument = self.telescope_name  # set instrument = telescope
+
+        if 'dut1' in uv.vartable.keys():
+            self.dut1 = uv['dut1']
+        if 'degpdy' in uv.vartable.keys():
+            self.earth_omega = uv['degpdy']
+        if 'gst0' in uv.vartable.keys():
+            self.gst0 = uv['gst0']
+        if 'rdate' in uv.vartable.keys():
+            self.rdate = uv['rdate'].replace('\x00', '')
+        if 'timesys' in uv.vartable.keys():
+            self.timesys = uv['timesys'].replace('\x00', '')
+
         # read through the file and get the data
         _source = uv['source']  # check source of initial visibility
         data_accumulator = {}
@@ -167,8 +187,8 @@ class Miriad(UVData):
 
         self.polarization_array = np.array(pol_list)
         if len(self.polarization_array) != self.Npols:
-            warnings.warn('npols={npols} but found {l} pols in data file'.format(
-                npols=self.Npols, l=len(self.polarization_array)))
+            warnings.warn('npols={npols} but found {n} pols in data file'.format(
+                npols=self.Npols, n=len(self.polarization_array)))
 
         # makes a data_array (and flag_array) of zeroes to be filled in by
         #   data values
@@ -443,8 +463,6 @@ class Miriad(UVData):
             self.zenith_ra = ra_list
             self.zenith_dec = dec_list
 
-        self.vis_units = 'UNCALIB'  # assume no calibration
-
         try:
             self.set_telescope_params()
         except ValueError, ve:
@@ -452,9 +470,11 @@ class Miriad(UVData):
 
         # check if object has all required uv_properties set
         if run_check:
-            self.check(run_check_acceptability=run_check_acceptability)
+            self.check(check_extra=check_extra,
+                       run_check_acceptability=run_check_acceptability)
 
-    def write_miriad(self, filepath, run_check=True, run_check_acceptability=True,
+    def write_miriad(self, filepath, run_check=True, check_extra=True,
+                     run_check_acceptability=True,
                      clobber=False, no_antnums=False):
         """
         Write the data to a miriad file.
@@ -462,14 +482,20 @@ class Miriad(UVData):
         Args:
             filename: The miriad file directory to write to.
             run_check: Option to check for the existence and proper shapes of
-                required parameters before writing the file. Default is True.
+                parameters before writing the file. Default is True.
+            check_extra: Option to check optional parameters as well as required
+                ones. Default is True.
             run_check_acceptability: Option to check acceptable range of the values of
-                required parameters before writing the file. Default is True.
+                parameters before writing the file. Default is True.
             clobber: Option to overwrite the filename if the file already exists.
                 Default is False.
             no_antnums: Option to not write the antnums variable to the file.
                 Should only be used for testing purposes.
         """
+        if run_check:
+            self.check(check_extra=check_extra,
+                       run_check_acceptability=run_check_acceptability)
+
         # check for multiple spws
         if self.data_array.shape[1] > 1:
             raise ValueError('write_miriad currently only handles single spw files.')
@@ -499,10 +525,10 @@ class Miriad(UVData):
 
         # initialize header variables
         uv._wrhd('obstype', 'mixed-auto-cross')
-        #avoid inserting extra \n.
-        if not self.history[-1]=='\n':
-            self.history+='\n'
-        uv._wrhd('history',self.history)
+        # avoid inserting extra \n.
+        if not self.history[-1] == '\n':
+            self.history += '\n'
+        uv._wrhd('history', self.history)
 
         # recognized miriad variables
         uv.add_var('nchan', 'i')
@@ -524,7 +550,7 @@ class Miriad(UVData):
         uv.add_var('longitu', 'd')
         uv['longitu'] = self.telescope_location_lat_lon_alt[1]
         uv.add_var('nants', 'i')
-        
+
         # Miriad has no way to keep track of antenna numbers, so the antenna
         # numbers are simply the index for each antenna in any array that
         # describes antenna attributes (e.g. antpos for the antenna_postions).
@@ -563,6 +589,23 @@ class Miriad(UVData):
         uv['instrume'] = self.instrument
         uv.add_var('altitude', 'd')
         uv['altitude'] = self.telescope_location_lat_lon_alt[2]
+
+        # optional pyuvdata variables that are not recognized miriad variables
+        if self.dut1 is not None:
+            uv.add_var('dut1', 'd')
+            uv['dut1'] = self.dut1
+        if self.earth_omega is not None:
+            uv.add_var('degpdy', 'd')
+            uv['degpdy'] = self.earth_omega
+        if self.gst0 is not None:
+            uv.add_var('gst0', 'd')
+            uv['gst0'] = self.gst0
+        if self.rdate is not None:
+            uv.add_var('rdate', 'a')
+            uv['rdate'] = self.rdate
+        if self.timesys is not None:
+            uv.add_var('timesys', 'a')
+            uv['timesys'] = self.timesys
 
         if not no_antnums:
             # Add in the antenna_numbers so we have them if we read this file back in.
@@ -619,6 +662,3 @@ class Miriad(UVData):
                 preamble = (uvw, t, (i, j))
 
                 uv.write(preamble, data, flags)
-        if run_check:
-            """Check for acceptable units."""
-            self.check(run_check_acceptability=run_check_acceptability)

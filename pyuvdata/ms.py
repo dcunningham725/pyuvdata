@@ -1,5 +1,7 @@
-"""Class for reading and writing casa measurement sets."""
-"""Requires casacore"""
+"""
+Class for reading and writing casa measurement sets.
+Requires casacore
+"""
 from astropy import constants as const
 import astropy.time as time
 import numpy as np
@@ -10,9 +12,9 @@ import parameter as uvp
 import casacore.tables as tables
 import telescopes
 import re
+
 """
-This dictionary defines the mapping
-between CASA polarization numbers and 
+This dictionary defines the mapping between CASA polarization numbers and
 AIPS polarization numbers
 """
 polDict = {1: 1, 2: 2, 3: 3, 4: 4, 5: -1, 6: -3,
@@ -29,12 +31,11 @@ class MS(UVData):
     """
     ms_required_extra = ['datacolumn', 'antenna_positions']  # ,'casa_history']
 
-    def _ms_hist_to_string(self, history_table, test_import_uvfits):
+    def _ms_hist_to_string(self, history_table):
         '''
         converts a CASA history table into a string that can be stored as the uvdata history parameter.
         Also stores messages column as a list for consitency with other uvdata types
         Args: history_table, a casa table object
-        test_import_uvfits, true if you are testing .ms file imported from uvfits file by casa. will ignore last five lines of history
         Returns: string containing only message column (consistent with other UVDATA history strings)
                  string enconding complete casa history table converted with \n denoting rows and ';' denoting column breaks
         '''
@@ -52,8 +53,6 @@ class MS(UVData):
         times = history_table.getcol('TIME')
         # Now loop through columns and generate history string
         ntimes = len(times)
-        if test_import_uvfits:
-            ntimes -= 5
         for tbrow in range(ntimes):
             message_str += str(message[tbrow])
             newline = str(app_params[tbrow]) \
@@ -86,17 +85,22 @@ class MS(UVData):
         writing ms is not yet supported
         '''
 
-    def read_ms(self, filepath, run_check=True, run_check_acceptability=True, data_column='DATA', pol_order='AIPS', test_import_uvfits=False):
+    def read_ms(self, filepath, run_check=True, check_extra=True,
+                run_check_acceptability=True,
+                data_column='DATA', pol_order='AIPS'):
         '''
         read in a casa measurement set
-        ARGS:
-        filepath: name of the measurement set folder
-        run_check:specify whether you want to run check
-        run_check_acceptability: run acceptability check for new UVData object
-        data_column: specify which CASA measurement set data column to read from (can be 'DATA','CORRECTED', or 'MODEL')
-        pol_order: use 'AIPS' or 'CASA' ordering of polarizations?
-        test_import_uvfits: test a .ms file that was created with CASA importuvfits method: 
-        ignores last five lines of history which contain information on importuvfits command. 
+
+        args:
+            filepath: name of the measurement set folder
+            run_check: Option to check for the existence and proper shapes of
+                parameters after reading in the file. Default is True.
+            check_extra: Option to check optional parameters as well as required
+                ones. Default is True.
+            run_check_acceptability: Option to check the values of parameters
+                after reading in the file. Default is True.
+            data_column: specify which CASA measurement set data column to read from (can be 'DATA','CORRECTED', or 'MODEL')
+            pol_order: use 'AIPS' or 'CASA' ordering of polarizations?
         '''
         # make sure user requests a valid data_column
         if data_column != 'DATA' and data_column != 'CORRECTED_DATA' and data_column != 'MODEL':
@@ -111,7 +115,8 @@ class MS(UVData):
             self.vis_units = "JY"
         elif(data_column == 'MODEL'):
             self.vis_units = "JY"
-        self.extra_keywords['data_column'] = data_column
+        # limit length of extra_keywords keys to 8 characters to match uvfits & miriad
+        self.extra_keywords['DATA_COL'] = data_column
         # get frequency information from spectral window table
         tb_spws = tables.table(filepath + '/SPECTRAL_WINDOW')
         freqs = tb_spws.getcol('CHAN_FREQ')
@@ -179,19 +184,19 @@ class MS(UVData):
         self.instrument = tbObs.getcol('TELESCOPE_NAME')[0]
         tbObs.close()
         # Use Telescopes.py dictionary to set array position
-        self.antenna_positions = tbAnt.getcol('POSITION')
+        full_antenna_positions = tbAnt.getcol('POSITION')
         xyz_telescope_frame = tbAnt.getcolkeyword(
             'POSITION', 'MEASINFO')['Ref']
-        antFlags = np.empty(len(self.antenna_positions), dtype=bool)
+        antFlags = np.empty(len(full_antenna_positions), dtype=bool)
         antFlags[:] = False
         for antnum in range(len(antFlags)):
-            antFlags[antnum] = np.all(self.antenna_positions[antnum, :] == 0)
+            antFlags[antnum] = np.all(full_antenna_positions[antnum, :] == 0)
         try:
             self.set_telescope_params()
-        except ValueError:  # If telescope location is not know, set location manually
+        except ValueError:  # If telescope location is not known, set location manually
             if(xyz_telescope_frame == 'ITRF'):
                 self.telescope_location = np.array(
-                    np.mean(self.antenna_positions[np.invert(antFlags), :], axis=0))
+                    np.mean(full_antenna_positions[np.invert(antFlags), :], axis=0))
                 # antenna names
         ant_names = tbAnt.getcol('STATION')
         self.Nants_telescope = len(antFlags[np.invert(antFlags)])
@@ -214,7 +219,11 @@ class MS(UVData):
                 ant_names.append(self.antenna_names[antNum])
         self.antenna_names = ant_names
         self.antenna_numbers = self.antenna_numbers[np.invert(antFlags)]
-        self.antenna_positions = self.antenna_positions[np.invert(antFlags), :]
+
+        relative_positions = np.zeros_like(full_antenna_positions)
+        relative_positions = full_antenna_positions - self.telescope_location.reshape(1, 3)
+        self.antenna_positions = relative_positions[np.invert(antFlags), :]
+
         tbAnt.close()
         tbField = tables.table(filepath + '/FIELD')
         if(tbField.getcol('PHASE_DIR').shape[1] == 2):
@@ -231,8 +240,7 @@ class MS(UVData):
         # set LST array from times and itrf
         self.set_lsts_from_time_array()
         # set the history parameter
-        _, self.history = self._ms_hist_to_string(
-            tables.table(filepath + '/HISTORY'), test_import_uvfits)
+        _, self.history = self._ms_hist_to_string(tables.table(filepath + '/HISTORY'))
         # CASA weights column keeps track of number of data points averaged.
 
         if self.pyuvdata_version_str not in self.history.replace('\n', ''):
@@ -246,4 +254,4 @@ class MS(UVData):
         # order polarizations
         self.order_pols(pol_order)
         if run_check:
-            self.check(run_check_acceptability=run_check_acceptability)
+            self.check(check_extra=check_extra, run_check_acceptability=run_check_acceptability)

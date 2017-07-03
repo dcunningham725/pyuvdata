@@ -448,6 +448,30 @@ def test_select_ant_pairs():
     nt.assert_equal(old_history + '  Downselected to specific antenna pairs '
                     'using pyuvdata.', uv_object2.history)
 
+    # check that you can use numpy integers with out errors:
+    first_ants = map(np.int32, [6, 2, 7, 2, 21, 27, 8])
+    second_ants = map(np.int32, [0, 20, 8, 1, 2, 3, 22])
+    ant_pairs_to_keep = zip(first_ants, second_ants)
+
+    uv_object2 = uv_object.select(ant_pairs_nums=ant_pairs_to_keep, inplace=False)
+    sorted_pairs_object2 = [tuple(sorted(p)) for p in zip(
+        uv_object2.ant_1_array, uv_object2.ant_2_array)]
+
+    nt.assert_equal(len(new_unique_ants), uv_object2.Nants_data)
+    nt.assert_equal(Nblts_selected, uv_object2.Nblts)
+    for ant in new_unique_ants:
+        nt.assert_true(
+            ant in uv_object2.ant_1_array or ant in uv_object2.ant_2_array)
+    for ant in np.unique(uv_object2.ant_1_array.tolist() + uv_object2.ant_2_array.tolist()):
+        nt.assert_true(ant in new_unique_ants)
+    for pair in sorted_pairs_to_keep:
+        nt.assert_true(pair in sorted_pairs_object2)
+    for pair in sorted_pairs_object2:
+        nt.assert_true(pair in sorted_pairs_to_keep)
+
+    nt.assert_equal(old_history + '  Downselected to specific antenna pairs '
+                    'using pyuvdata.', uv_object2.history)
+
     # check that you can specify a single pair without errors
     uv_object2.select(ant_pairs_nums=(0, 6))
     sorted_pairs_object2 = [tuple(sorted(p)) for p in zip(
@@ -1205,6 +1229,7 @@ def test_get_feedpols():
     # Test break when stokes visibilities are present
     uv.polarization_array[0] = 1  # Stokes I
     nt.assert_raises(ValueError, uv.get_feedpols)
+<<<<<<< HEAD
 
 def test_parse_ants():
     # Test function to get correct antenna pairs and polarizations
@@ -1241,3 +1266,5 @@ def test_parse_ants():
     # Test ant_str = 'none'
     ant_str = 'none'
     nt.assert_raises(ValueError, uv.parse_ants(ant_str))
+=======
+>>>>>>> origin/master
