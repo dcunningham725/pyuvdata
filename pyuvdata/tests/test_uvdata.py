@@ -1229,7 +1229,6 @@ def test_get_feedpols():
     # Test break when stokes visibilities are present
     uv.polarization_array[0] = 1  # Stokes I
     nt.assert_raises(ValueError, uv.get_feedpols)
-<<<<<<< HEAD
 
 def test_parse_ants():
     # Test function to get correct antenna pairs and polarizations
@@ -1266,5 +1265,3 @@ def test_parse_ants():
     # Test ant_str = 'none'
     ant_str = 'none'
     nt.assert_raises(ValueError, uv.parse_ants(ant_str))
-=======
->>>>>>> origin/master
