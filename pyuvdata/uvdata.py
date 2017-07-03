@@ -1739,10 +1739,10 @@ class UVData(UVBase):
                         pols = None
                         ant_i,ant_j = str(ant_i),str(ant_j)
                         if not ant_i.isdigit():
-                            ai = re.search(r'(\d+)([x,y])',ant_i).groups()
+                            ai = re.search(r'(\d+)([x,y,l,r])',ant_i).groups()
 
                         if not ant_j.isdigit():
-                            aj = re.search(r'(\d+)([x,y])',ant_j).groups()
+                            aj = re.search(r'(\d+)([x,y,l,r])',ant_j).groups()
 
                         if ant_i.isdigit() and ant_j.isdigit():
                             ai = [ant_i,'']
@@ -1764,7 +1764,6 @@ class UVData(UVBase):
                                         continue
                                     elif not uvutils.polstr2num(pol) in polarizations:
                                             polarizations.append(uvutils.polstr2num(pol))
-                                            print polarizations
 
         # If ant_str == 'all', i.e. keep all antenna pairs
         if len(ant_pairs_nums) == 0:
