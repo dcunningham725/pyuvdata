@@ -1205,3 +1205,39 @@ def test_get_feedpols():
     # Test break when stokes visibilities are present
     uv.polarization_array[0] = 1  # Stokes I
     nt.assert_raises(ValueError, uv.get_feedpols)
+
+def test_parse_ants():
+    # Test function to get correct antenna pairs and polarizations
+    uv = UVData()
+    testfile = os.path.join(
+        DATA_PATH, 'day2_TDEM0003_10s_norx_1src_1spw.uvfits')
+    uvtest.checkWarnings(uv.read_uvfits, [testfile],
+                         message='Telescope EVLA is not')
+
+    # Test ant_str = 'all'
+    # ant_pairs_nums and polarizations should be None
+    ant_str = 'all'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    nt.assert_is_instance(ant_pairs_nums,type(None))
+    nt.assert_is_instance(polarizations,type(None))
+
+    # Test ant_str = 'auto'
+    # polarizations should be none
+    # ant_str = 'auto'
+    # ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    # for ant_pair in ant_pairs_nums:
+    #     nt.assert_equal(ant_pair[0],ant_pair[1])
+    # nt.assert_is_instancepolarizations,type(None))
+    # No autocorrelations in uvfits files in DATA_PATH
+
+    # Test ant_str = 'cross'
+    # polarizations should be none
+    ant_str = 'cross'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    for ant_pair in ant_pairs_nums:
+        nt.assert_not_equal(ant_pair[0],ant_pair[1])
+    nt.assert_is_instancepolarizations,type(None))
+
+    # Test ant_str = 'none'
+    ant_str = 'none'
+    nt.assert_raises(ValueError, uv.parse_ants(ant_str))
