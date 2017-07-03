@@ -12,10 +12,7 @@ import utils as uvutils
 import version as uvversion
 import copy
 import collections
-<<<<<<< HEAD
 import re
-=======
->>>>>>> origin/master
 
 
 class UVData(UVBase):
@@ -1461,13 +1458,10 @@ class UVData(UVBase):
         self.flag_array = self.flag_array[:, :, :, order]
 
         # check if object is self-consistent
-<<<<<<< HEAD
         if run_check:
             self.check(run_check_acceptability=run_check_acceptability)
-=======
         self.check(check_extra=check_extra,
                    run_check_acceptability=run_check_acceptability)
->>>>>>> origin/master
 
     def get_ants(self):
         """
@@ -1549,10 +1543,7 @@ class UVData(UVBase):
             blt_ind2 = np.array([], dtype=np.int64)
         elif len(key) == 1:
             key = key[0]  # For simplicity
-<<<<<<< HEAD
             print(key)
-=======
->>>>>>> origin/master
             if isinstance(key, collections.Iterable):
                 # Nested tuple. Call function again.
                 blt_ind1, blt_ind2, pol_ind = self._key2inds(key)
@@ -1693,7 +1684,6 @@ class UVData(UVBase):
         antpairpols = self.get_antpairpols()
         for key in antpairpols:
             yield (key, self.get_data(key, squeeze=squeeze))
-<<<<<<< HEAD
 
     def parse_ants(self,ant_str):
         """
@@ -1811,5 +1801,3 @@ class UVData(UVBase):
             polarizations = None
 
         return ant_pairs_nums,polarizations
-=======
->>>>>>> origin/master
