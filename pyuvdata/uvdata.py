@@ -1679,6 +1679,9 @@ class UVData(UVBase):
         ant_re = r'(\(((-?\d+[lrxy]?,?)+)\)|-?\d+[lrxy]?)'
         bl_re = '(^(%s_%s|%s),?)' % (ant_re, ant_re, ant_re)
         str_pos = 0
+        ant_pairs_nums = []
+        polarizations = []
+        bls = self.get_baseline_nums()
 
         while str_pos < len(ant_str):
             m = re.search(bl_re, ant_str[str_pos:])
@@ -1720,8 +1723,6 @@ class UVData(UVBase):
                     else:
                         ant_j_list = m[6].split(',')
 
-                ant_pairs_nums = []
-                polarizations = []
                 for ant_i in ant_i_list:
                     for ant_j in ant_j_list:
                         include = None
@@ -1756,8 +1757,16 @@ class UVData(UVBase):
                         elif not ant_i.isdigit() and not ant_j.isdigit():
                             pols = [ai[1]+aj[1]]
 
-                        if include:
-                            ant_pairs_nums.append(tuple((abs(int(ai[0])),abs(int(aj[0])))))
+                        ant_tuple = tuple((abs(int(ai[0])),abs(int(aj[0]))))
+                        if ant_tuple[1] < ant_tuple[0]:
+                            ant_tuple = ant_tuple[::-1]
+
+                        if (include and np.logical_or(
+                            self.antnums_to_baseline(ant_tuple[0],ant_tuple[1]) in bls,
+                            self.antnums_to_baseline(ant_tuple[1],ant_tuple[0]) in bls)):
+                            if not (ant_tuple in ant_pairs_nums or
+                                tuple((ant_tuple[1],ant_tuple[0])) in ant_pairs_nums):
+                                ant_pairs_nums.append(ant_tuple)
                             if not pols is None:
                                 for pol in pols:
                                     if pol == 0:
