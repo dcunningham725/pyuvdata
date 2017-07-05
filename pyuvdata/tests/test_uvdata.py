@@ -1222,12 +1222,14 @@ def test_parse_ants():
     nt.assert_is_instance(polarizations,type(None))
 
     # Test ant_str = 'auto'
-    # polarizations should be none
-    # ant_str = 'auto'
-    # ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    # No autocorrelations in testfile
+    ant_str = 'auto'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    nt.assert_is_instance(ant_pairs_nums,type(None))
+    nt.assert_is_instance(polarizations,type(None))
     # for ant_pair in ant_pairs_nums:
     #     nt.assert_equal(ant_pair[0],ant_pair[1])
-    # nt.assert_is_instancepolarizations,type(None))
+    # nt.assert_is_instance(polarizations,type(None))
     # No autocorrelations in uvfits files in DATA_PATH
 
     # Test ant_str = 'cross'
@@ -1236,8 +1238,27 @@ def test_parse_ants():
     ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
     for ant_pair in ant_pairs_nums:
         nt.assert_not_equal(ant_pair[0],ant_pair[1])
-    nt.assert_is_instancepolarizations,type(None))
+    nt.assert_is_instance(polarizations,type(None))
 
     # Test ant_str = 'none'
     ant_str = 'none'
     nt.assert_raises(ValueError, uv.parse_ants(ant_str))
+
+    # Test ant_str = 0
+    ant_str = '0'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(0, 1),(0, 2),(0, 3),(0, 6),(0, 7),(0, 8),(0, 11),
+                               (0, 14),(0, 18),(0, 19),(0, 20),(0, 21),(0, 22),
+                               (0, 23),(0, 24),(0, 26),(0, 27)]
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_is_instance(polarizations,type(None))
+
+    # Test ant_str = '0,1,2'
+    ant_str = '22,26'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(0, 22),(0, 26),(1, 22),(1, 26),(2, 22),(2, 26),(3, 22),(3, 26),(6, 22),
+                               (6, 26),(7, 22),(7, 26),(8, 22),(8, 26),(11, 22),(11, 26),(14, 22),
+                               (14, 26),(18, 22),(18, 26),(19, 22),(19, 26),(20, 22),(20, 26),(21, 22),
+                               (21, 26),(22, 23),(22, 24),(22, 26),(22, 27),(23, 26),(24, 26),(26, 27)]
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_is_instance(polarizations,type(None))
