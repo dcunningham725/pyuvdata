@@ -1706,7 +1706,9 @@ class UVData(UVBase):
         ant_re = r'(\(((-?\d+[lrxy]?,?)+)\)|-?\d+[lrxy]?)'
         bl_re = '(^(%s_%s|%s),?)' % (ant_re, ant_re, ant_re)
         str_pos = 0
-
+        ant_pairs_nums = []
+        polarizations = []
+        
         while str_pos < len(ant_str):
             m = re.search(bl_re, ant_str[str_pos:])
             if m is None:
@@ -1747,8 +1749,6 @@ class UVData(UVBase):
                     else:
                         ant_j_list = m[6].split(',')
 
-                ant_pairs_nums = []
-                polarizations = []
                 for ant_i in ant_i_list:
                     for ant_j in ant_j_list:
                         include = None
