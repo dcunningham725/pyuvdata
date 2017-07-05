@@ -1277,6 +1277,12 @@ def test_parse_ants():
     nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
     nt.assert_is_instance(polarizations,type(None))
 
-    # Test ant_str = '0,1,2'
-    ant_str = '22,23,26'
+    # Test ant_str = '22,26'
+    ant_str = '22,26'
     ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(0, 22),(0, 26),(1, 22),(1, 26),(2, 22),(2, 26),(3, 22),(3, 26),(6, 22),
+                               (6, 26),(7, 22),(7, 26),(8, 22),(8, 26),(11, 22),(11, 26),(14, 22),
+                               (14, 26),(18, 22),(18, 26),(19, 22),(19, 26),(20, 22),(20, 26),(21, 22),
+                               (21, 26),(22, 23),(22, 24),(22, 26),(22, 27),(23, 26),(24, 26),(26, 27)]
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_is_instance(polarizations,type(None))
