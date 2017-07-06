@@ -1235,40 +1235,32 @@ def test_parse_ants():
     uv = UVData()
     testfile = os.path.join(
         DATA_PATH, 'day2_TDEM0003_10s_norx_1src_1spw.uvfits')
-    uvtest.checkWarnings(uv.read_uvfits, [testfile],
-                         message='Telescope EVLA is not')
+    uvtest.checkWarnings(uv.read_uvfits, [testfile], message='Telescope EVLA is not')
 
-    # Test ant_str = 'all'
-    # ant_pairs_nums and polarizations should be None
+    # All baselines
     ant_str = 'all'
     ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
     nt.assert_is_instance(ant_pairs_nums,type(None))
     nt.assert_is_instance(polarizations,type(None))
 
-    # Test ant_str = 'auto'
-    # No autocorrelations in testfile
+    # Auto correlations
     ant_str = 'auto'
     ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
     nt.assert_is_instance(ant_pairs_nums,type(None))
     nt.assert_is_instance(polarizations,type(None))
-    # for ant_pair in ant_pairs_nums:
-    #     nt.assert_equal(ant_pair[0],ant_pair[1])
-    # nt.assert_is_instance(polarizations,type(None))
-    # No autocorrelations in uvfits files in DATA_PATH
 
-    # Test ant_str = 'cross'
-    # polarizations should be none
+    # Cross correlations
     ant_str = 'cross'
     ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
     for ant_pair in ant_pairs_nums:
         nt.assert_not_equal(ant_pair[0],ant_pair[1])
     nt.assert_is_instance(polarizations,type(None))
 
-    # Test ant_str = 'none'
+    # Unparsible string
     ant_str = 'none'
     nt.assert_raises(ValueError, uv.parse_ants(ant_str))
 
-    # Test ant_str = 0
+    # Single antenna number
     ant_str = '0'
     ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
     ant_pairs_data = [(0, 1),(0, 2),(0, 3),(0, 6),(0, 7),(0, 8),(0, 11),
@@ -1277,7 +1269,7 @@ def test_parse_ants():
     nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
     nt.assert_is_instance(polarizations,type(None))
 
-    # Test ant_str = '22,26'
+    # Multiple antenna numbers as list
     ant_str = '22,26'
     ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
     ant_pairs_data = [(0, 22),(0, 26),(1, 22),(1, 26),(2, 22),(2, 26),(3, 22),(3, 26),(6, 22),
@@ -1286,3 +1278,71 @@ def test_parse_ants():
                                (21, 26),(22, 23),(22, 24),(22, 26),(22, 27),(23, 26),(24, 26),(26, 27)]
     nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
     nt.assert_is_instance(polarizations,type(None))
+
+    # Single baseline
+    ant_str = '1_3'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(1,3)]
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_is_instance(polarizations,type(None))
+
+    # Single baseline with polarization
+    ant_str = '1l_3r'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(1, 3)]
+    polarizations_data = [-4]
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_items_equal(polarizations,polarizations_data)
+
+    # Multiple baselines as list
+    # Additional check that baselines not in data are not output
+    ant_str = '1_2,1_3,1_10'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(1, 2),(1, 3)] # Antenna number 10 not present in testfile
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_is_instance(polarizations,type(None))
+
+    # Multiples baselines with polarizations as list
+    ant_str = '1r_2l,1l_3l,1r_11r'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(1, 2),(1, 3),(1, 11)]
+    polarizations_data = [-1, -2, -3]
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_items_equal(polarizations,polarizations_data)
+
+    # Specific baselines with parenthesis
+    ant_str = '(1,3)_10'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(1, 10),(3, 10)]
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_is_instance(polarizations,type(None))
+
+    # Specific baselines with parenthesis
+    ant_str = '1_(3,10)'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(1, 3),(1, 10)]
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_is_instance(polarizations,type(None))
+
+    # Antenna numbers with polarizations
+    ant_str = '(1l,2r)_(3l,6r)'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(1, 3),(1, 6),(2, 3),(2, 6)]
+    polarizations_data = [-1, -2, -3, -4]
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_items_equal(polarizations,polarizations_data)
+
+    # Antenna numbers with - for avoidance
+    ant_str = '1_(-3,10)'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(1, 10)]
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_is_instance(polarizations,type(None))
+
+    # Antenna numbers with polarizations and - for avoidance
+    ant_str = '1l_(-3r,10l)'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(1, 10)]
+    polarizations_data = [-2]
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_items_equal(polarizations,polarizations_data)
