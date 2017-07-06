@@ -1808,5 +1808,7 @@ class UVData(UVBase):
         # If no polarizations found from ant_str, return None for polarizations
         if len(polarizations) == 0:
             polarizations = None
+        else:
+            polarizations.sort(reverse=True)
 
         return ant_pairs_nums,polarizations
