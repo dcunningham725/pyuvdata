@@ -1713,8 +1713,6 @@ class UVData(UVBase):
         while str_pos < len(ant_str):
             m = re.search(bl_re, ant_str[str_pos:])
             if m is None:
-                ant_pairs_nums = []
-                polarizations = []
                 if ant_str[str_pos:].startswith('all'):
                     pass
                 elif ant_str[str_pos:].startswith('auto'):
@@ -1725,6 +1723,14 @@ class UVData(UVBase):
                     for ant_pair in self.get_antpairs():
                         if ant_pair[0] != ant_pair[1]:
                             ant_pairs_nums.append(ant_pair)
+                elif ant_str[str_pos:].upper().startswith('I'):
+                    polarizations.append(1)
+                elif ant_str[str_pos:].upper().startswith('Q'):
+                    polarizations.append(2)
+                elif ant_str[str_pos:].upper().startswith('U'):
+                    polarizations.append(3)
+                elif ant_str[str_pos:].upper().startswith('V'):
+                    polarizations.append(4)
                 else:
                     raise ValueError('Unparsible ant argument "%s"' % ant_str)
 
