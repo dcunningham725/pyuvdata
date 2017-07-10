@@ -1708,7 +1708,6 @@ class UVData(UVBase):
         str_pos = 0
         ant_pairs_nums = []
         polarizations = []
-        bls = self.get_baseline_nums()
 
         while str_pos < len(ant_str):
             m = re.search(bl_re, ant_str[str_pos:])
