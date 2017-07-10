@@ -1230,6 +1230,7 @@ def test_get_feedpols():
     uv.polarization_array[0] = 1  # Stokes I
     nt.assert_raises(ValueError, uv.get_feedpols)
 
+
 def test_parse_ants():
     # Test function to get correct antenna pairs and polarizations
     uv = UVData()
@@ -1255,6 +1256,13 @@ def test_parse_ants():
     for ant_pair in ant_pairs_nums:
         nt.assert_not_equal(ant_pair[0],ant_pair[1])
     nt.assert_is_instance(polarizations,type(None))
+
+    # Stokes params
+    ant_str = 'I,q,U,v'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    polarizations_data = [4, 3, 2, 1]
+    nt.assert_is_instance(ant_pairs_nums,type(None))
+    nt.assert_items_equal(polarizations,polarizations_data)
 
     # Unparsible string
     ant_str = 'none'
@@ -1344,5 +1352,13 @@ def test_parse_ants():
     ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
     ant_pairs_data = [(1, 10)]
     polarizations_data = [-2]
+    nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
+    nt.assert_items_equal(polarizations,polarizations_data)
+
+    # Antenna numbers and Stokes parameters
+    ant_str = '(1l,2r)_(3l,6r),I,q'
+    ant_pairs_nums,polarizations = uv.parse_ants(ant_str)
+    ant_pairs_data = [(1, 3),(1, 6),(2, 3),(2, 6)]
+    polarizations_data = [2, 1, -1, -2, -3, -4]
     nt.assert_items_equal(ant_pairs_nums,ant_pairs_data)
     nt.assert_items_equal(polarizations,polarizations_data)
