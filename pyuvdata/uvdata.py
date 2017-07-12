@@ -1708,6 +1708,7 @@ class UVData(UVBase):
         str_pos = 0
         ant_pairs_nums = []
         polarizations = []
+        ant_nums = self.get_ants()
 
         while str_pos < len(ant_str):
             m = re.search(bl_re, ant_str[str_pos:])
@@ -1715,13 +1716,19 @@ class UVData(UVBase):
                 if ant_str[str_pos:].startswith('all'):
                     pass
                 elif ant_str[str_pos:].startswith('auto'):
-                    for ant_pair in self.get_antpairs():
-                        if ant_pair[0] == ant_pair[1]:
-                            ant_pairs_nums.append(ant_pair)
+                    for ant in ant_nums:
+                        ant_tuple = tuple((ant,ant))
+                        ant_pairs_nums.append(ant_tuple)
                 elif ant_str[str_pos:].startswith('cross'):
-                    for ant_pair in self.get_antpairs():
-                        if not ant_pair[0] == ant_pair[1]:
-                            ant_pairs_nums.append(ant_pair)
+                    for ant1 in ant_nums:
+                        for ant2 in ant_nums:
+                            if not ant1 == ant2:
+                                if ant1 < ant2:
+                                    ant_tuple = tuple((ant1,ant2))
+                                else:
+                                    ant_tuple = tuple((ant2,ant1))
+                                if not ant_tuple in ant_pairs_nums:
+                                    ant_pairs_nums.append(ant_tuple)
                 elif ant_str[str_pos:].upper().startswith('I'):
                     polarizations.append(1)
                 elif ant_str[str_pos:].upper().startswith('Q'):
@@ -1781,10 +1788,16 @@ class UVData(UVBase):
                             ai = [ant_i,'']
                             aj = [ant_j,'']
                         elif ant_i.isdigit() and not ant_j.isdigit():
-                            pols = ['x'+aj[1],'y'+aj[1]]
+                            if ('x' in ant_j or 'y' in ant_j):
+                                pols = ['x'+aj[1],'y'+aj[1]]
+                            else:
+                                pols = ['l'+aj[1],'r'+aj[1]]
                             ai = [ant_i,'']
                         elif not ant_i.isdigit() and ant_j.isdigit():
-                            pols = [ai[1]+'x',ai[1]+'y']
+                            if ('x' in ant_i or 'y' in ant_i):
+                                pols = [ai[1]+'x',ai[1]+'y']
+                            else:
+                                pols = [ai[1]+'l',ai[1]+'r']
                             aj = [ant_j,'']
                         elif not ant_i.isdigit() and not ant_j.isdigit():
                             pols = [ai[1]+aj[1]]
@@ -1799,9 +1812,7 @@ class UVData(UVBase):
                                 ant_pairs_nums.append(ant_tuple)
                             if not pols is None:
                                 for pol in pols:
-                                    if pol == 0:
-                                        pass
-                                    elif not uvutils.polstr2num(pol) in polarizations:
+                                    if not uvutils.polstr2num(pol) in polarizations:
                                             polarizations.append(uvutils.polstr2num(pol))
 
         # If ant_str == 'all', i.e. keep all antenna pairs
